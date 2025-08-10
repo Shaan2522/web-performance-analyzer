@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Page Not Found</title>
+    <script type="text/javascript">
+      // Single Page Apps for GitHub Pages
+      // MIT License
+      // https://github.com/rafgraph/spa-github-pages
+      // This script takes the current url and converts the path and query
+      // string into just the query string, and then redirects the browser
+      // to the new url with only the query string and without the path.
+      // If we didn't do this, then the browser would try to search for a
+      // file at the path; e.g. for https://foo.github.io/bar/baz/foo.html
+      // it would try to find a file named "foo.html" in the "baz" folder
+      // in the "bar" folder, but all it would find is an index.html in the
+      // bar folder.  We want to load the index.html file and let React Router
+      // handle the routing.  So we redirect to https://foo.github.io/bar/?/baz/foo.html
+      // and then the React Router will see the /baz/foo.html as the path.
+      (function() {
+        var redirect = sessionStorage.getItem('redirect');
+        delete sessionStorage.removeItem('redirect');
+        if (redirect && redirect != window.location.href) {
+          history.replaceState(null, null, redirect);
+        }
+      })();
+
+      (function () {
+        var path = window.location.pathname;
+        var query = window.location.search;
+        var fragment = window.location.hash;
+        if (path.includes('.html')) {
+          // If the path contains an .html extension, it's likely a direct file access
+          // and we should let the server handle it or redirect to the root.
+          // For SPA, we want to redirect to the root and let the router handle it.
+          window.location.replace(window.location.origin + window.location.pathname.replace(/\/[^\/]+\.html$/, '/') + query + fragment);
+        } else if (path !== '/' && !path.includes('.')) {
+          // If the path is not the root and doesn't contain a file extension,
+          // it's likely a client-side route that needs to be handled by the SPA.
+          // We redirect to the root with the path as a query parameter.
+          window.location.replace(window.location.origin + window.location.pathname.replace(/\/[^\/]+\.html$/, '/') + '/?' + path.replace(/\//, '') + query + fragment);
+        }
+      }());
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
