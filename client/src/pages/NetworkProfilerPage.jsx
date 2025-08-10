@@ -2,58 +2,59 @@ import React, { useState, useEffect } from 'react';
 import NetworkAnalyzer from '../services/NetworkAnalyzer';
 import WaterfallChart from '../components/Network/WaterfallChart';
 import ResourceTable from '../components/Network/ResourceTable';
-import LoadingSpinner from '../components/UI/LoadingSpinner'; // Import LoadingSpinner
+import LoadingSpinner from '../components/UI/LoadingSpinner';
+import { useData } from '../context/DataContext';
+import { STORE_NAMES } from '../services/StorageService';
 
 function NetworkProfilerPage() {
-  const [requests, setRequests] = useState([]);
+  const { data, loading, error, saveData } = useData();
   const [isMonitoring, setIsMonitoring] = useState(false);
-  const [sendError, setSendError] = useState(null);
-  const [sendSuccess, setSendSuccess] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // For initial loading if any
+  const [monitoringIntervalId, setMonitoringIntervalId] = useState(null);
+
+  const requests = data[STORE_NAMES.NETWORK] || [];
 
   useEffect(() => {
     // Cleanup on unmount
     return () => {
+      if (monitoringIntervalId) {
+        clearInterval(monitoringIntervalId);
+      }
       if (isMonitoring) {
         NetworkAnalyzer.stopMonitoring();
       }
     };
-  }, [isMonitoring]);
+  }, [isMonitoring, monitoringIntervalId]);
 
   const handleStartMonitoring = () => {
-    setIsLoading(true);
+    if (isMonitoring) return;
+
     NetworkAnalyzer.startMonitoring();
     setIsMonitoring(true);
-    setSendSuccess(false);
-    setSendError(null);
-    // Update requests state periodically
-    const interval = setInterval(() => {
-      setRequests(NetworkAnalyzer.getRequests());
-    }, 1000);
-    setIsLoading(false);
-    return () => clearInterval(interval);
+
+    const intervalId = setInterval(async () => {
+      const currentRequests = NetworkAnalyzer.getRequests();
+      if (currentRequests.length > 0) {
+        // Save the entire array of requests as one record for simplicity
+        // In a real app, you might want to save individual requests
+        await saveData(STORE_NAMES.NETWORK, { requests: currentRequests });
+      }
+    }, 1000); // Save requests every 1 second
+    setMonitoringIntervalId(intervalId);
   };
 
   const handleStopMonitoring = () => {
+    if (!isMonitoring) return;
+
     NetworkAnalyzer.stopMonitoring();
     setIsMonitoring(false);
-  };
-
-  const handleSendRequests = async () => {
-    setIsLoading(true);
-    setSendError(null);
-    setSendSuccess(false);
-    try {
-      await NetworkAnalyzer.sendRequestsToServer();
-      setSendSuccess(true);
-    } catch (error) {
-      setSendError('Failed to send network requests: ' + (error.message || 'Unknown error'));
-    } finally {
-      setIsLoading(false);
+    if (monitoringIntervalId) {
+      clearInterval(monitoringIntervalId);
+      setMonitoringIntervalId(null);
     }
   };
 
-  if (isLoading) return <LoadingSpinner />;
+  if (loading) return <LoadingSpinner />;
+  if (error) return <div className="error-message">Error loading network data: {error.message}</div>;
 
   return (
     <div className="network-profiler-page">
@@ -63,14 +64,11 @@ function NetworkProfilerPage() {
       <div className="profiling-controls">
         <button onClick={handleStartMonitoring} disabled={isMonitoring} className="button primary">Start Monitoring</button>
         <button onClick={handleStopMonitoring} disabled={!isMonitoring} className="button secondary">Stop Monitoring</button>
-        <button onClick={handleSendRequests} disabled={requests.length === 0} className="button primary">Send Requests to Server</button>
       </div>
-      {sendSuccess && <p className="success-message">Network requests sent successfully!</p>}
-      {sendError && <p className="error-message">{sendError}</p>}
 
       <div className="network-data-display">
-        <WaterfallChart data={requests} />
-        <ResourceTable resources={requests} />
+        <WaterfallChart data={requests.length > 0 ? requests[requests.length - 1].requests : []} />
+        <ResourceTable resources={requests.length > 0 ? requests[requests.length - 1].requests : []} />
       </div>
     </div>
   );

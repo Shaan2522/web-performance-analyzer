@@ -2,58 +2,57 @@ import React, { useState, useEffect } from 'react';
 import MemoryProfiler from '../services/MemoryProfiler';
 import MemoryChart from '../components/Memory/MemoryChart';
 import LeakDetector from '../components/Memory/LeakDetector';
-import LoadingSpinner from '../components/UI/LoadingSpinner'; // Import LoadingSpinner
+import LoadingSpinner from '../components/UI/LoadingSpinner';
+import { useData } from '../context/DataContext';
+import { STORE_NAMES } from '../services/StorageService';
 
 function MemoryAnalyzerPage() {
-  const [snapshots, setSnapshots] = useState([]);
+  const { data, loading, error, saveData } = useData();
   const [isProfiling, setIsProfiling] = useState(false);
-  const [sendError, setSendError] = useState(null);
-  const [sendSuccess, setSendSuccess] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // For initial loading if any
+  const [profilingIntervalId, setProfilingIntervalId] = useState(null);
+
+  const snapshots = data[STORE_NAMES.MEMORY] || [];
 
   useEffect(() => {
     // Cleanup on unmount
     return () => {
+      if (profilingIntervalId) {
+        clearInterval(profilingIntervalId);
+      }
       if (isProfiling) {
         MemoryProfiler.stopProfiling();
       }
     };
-  }, [isProfiling]);
+  }, [isProfiling, profilingIntervalId]);
 
   const handleStartProfiling = () => {
-    setIsLoading(true);
-    MemoryProfiler.startProfiling(1000); // Take snapshot every 1 second
+    if (isProfiling) return;
+
+    MemoryProfiler.startProfiling(); // Start internal profiler
     setIsProfiling(true);
-    setSendSuccess(false);
-    setSendError(null);
-    // Update snapshots state periodically
-    const interval = setInterval(() => {
-      setSnapshots(MemoryProfiler.getSnapshots());
-    }, 1000);
-    setIsLoading(false);
-    return () => clearInterval(interval);
+
+    const intervalId = setInterval(async () => {
+      const snapshot = MemoryProfiler.takeSnapshot();
+      if (snapshot) {
+        await saveData(STORE_NAMES.MEMORY, snapshot);
+      }
+    }, 1000); // Take snapshot and save every 1 second
+    setProfilingIntervalId(intervalId);
   };
 
   const handleStopProfiling = () => {
+    if (!isProfiling) return;
+
     MemoryProfiler.stopProfiling();
     setIsProfiling(false);
-  };
-
-  const handleSendSnapshots = async () => {
-    setIsLoading(true);
-    setSendError(null);
-    setSendSuccess(false);
-    try {
-      await MemoryProfiler.sendAllSnapshotsToServer();
-      setSendSuccess(true);
-    } catch (error) {
-      setSendError('Failed to send snapshots: ' + (error.message || 'Unknown error'));
-    } finally {
-      setIsLoading(false);
+    if (profilingIntervalId) {
+      clearInterval(profilingIntervalId);
+      setProfilingIntervalId(null);
     }
   };
 
-  if (isLoading) return <LoadingSpinner />;
+  if (loading) return <LoadingSpinner />;
+  if (error) return <div className="error-message">Error loading memory data: {error.message}</div>;
 
   return (
     <div className="memory-analyzer-page">
@@ -63,10 +62,7 @@ function MemoryAnalyzerPage() {
       <div className="profiling-controls">
         <button onClick={handleStartProfiling} disabled={isProfiling} className="button primary">Start Profiling</button>
         <button onClick={handleStopProfiling} disabled={!isProfiling} className="button secondary">Stop Profiling</button>
-        <button onClick={handleSendSnapshots} disabled={snapshots.length === 0} className="button primary">Send Snapshots to Server</button>
       </div>
-      {sendSuccess && <p className="success-message">Snapshots sent successfully!</p>}
-      {sendError && <p className="error-message">{sendError}</p>}
 
       <div className="memory-data-display">
         <MemoryChart snapshots={snapshots} />

@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useData } from './context/DataContext';
 import MainLayout from './components/Layout/MainLayout';
 import MonitorPage from './pages/MonitorPage';
 import DashboardPage from './pages/Dashboard';
@@ -10,6 +11,18 @@ import HomePage from './pages/HomePage'; // Import HomePage from its new locatio
 import ErrorBoundary from './components/UI/ErrorBoundary';
 
 function App() {
+  const { data, loading, error } = useData();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading data: {error.message}</div>;
+  }
+
+  console.log('Data loaded from IndexedDB:', data);
+
   return (
     <Router>
       <ErrorBoundary>

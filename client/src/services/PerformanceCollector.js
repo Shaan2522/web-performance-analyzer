@@ -1,6 +1,5 @@
 import { onLCP, onINP, onCLS } from 'web-vitals';
-import ApiService from './ApiService';
-import { STORE_NAMES } from './StorageService';
+import { storageService, STORE_NAMES } from './StorageService';
 
 class PerformanceCollector {
   constructor() {
@@ -90,13 +89,13 @@ class PerformanceCollector {
     return { ...this.metrics }; // Return a copy to prevent external modification
   }
 
-  async sendToServer() {
+  async saveMetrics() {
     if (!this.isMonitoring) {
-      console.warn('Monitoring not active. Cannot send data.');
+      console.warn('Monitoring not active. Cannot save data.');
       return;
     }
 
-    this.stopMonitoring(); // Stop monitoring before sending
+    this.stopMonitoring(); // Stop monitoring before saving
 
     const currentUrl = window.location.href;
     const performancePayload = {
@@ -115,19 +114,18 @@ class PerformanceCollector {
     }
 
     try {
-      // Use ApiService for POST request
-      const performanceResponse = await ApiService.post('/performance', performancePayload, STORE_NAMES.PERFORMANCE);
-      console.log('Performance data sent:', performanceResponse);
+      const savedData = await storageService.saveData(STORE_NAMES.PERFORMANCE, performancePayload);
+      console.log('Performance data saved:', savedData);
 
-      // You might want to send navigation, resources, paints separately or as part of a larger payload
+      // You might want to save navigation, resources, paints separately or as part of a larger payload
       // For now, we'll just log them.
       console.log('Navigation Timing:', this.metrics.navigation);
       console.log('Resource Timing:', this.metrics.resources);
       console.log('Paint Timing:', this.metrics.paints);
 
-      return performanceResponse;
+      return savedData;
     } catch (error) {
-      console.error('Error sending performance data:', error.message);
+      console.error('Error saving performance data:', error.message);
       throw error; // Re-throw to allow caller to handle
     }
   }

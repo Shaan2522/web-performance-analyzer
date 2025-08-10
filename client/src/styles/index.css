@@ -273,7 +273,6 @@ p {
 .dashboard-page,
 .memory-analyzer-page,
 .network-profiler-page,
-.reports-page,
 .home-page,
 .monitor-page {
   padding: 25px;
@@ -528,14 +527,23 @@ p {
 /* Reports Page */
 .reports-page {
   padding: 25px;
+  background-color: var(--background-light);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px var(--shadow-light);
+  margin: 20px auto;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .export-options {
   background-color: var(--card-background);
   border-radius: 10px;
   box-shadow: 0 4px 8px var(--shadow-light);
-  padding: 25px;
+  padding: 40px 100px 40px 100px;
   margin-bottom: 25px;
+  /* width: 800px; */
 }
 
 .export-options .report-controls-top {
@@ -547,7 +555,7 @@ p {
 
 .export-options .date-range {
   /* flex: 1; Removed flex:1 */
-  width: 180px; /* Fixed width for date inputs */
+  width: 100px; /* Fixed width for date inputs */
 }
 
 .export-options label {

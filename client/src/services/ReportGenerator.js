@@ -1,12 +1,18 @@
-import ApiService from './ApiService';
+import { storageService, STORE_NAMES } from './StorageService';
 
 class ReportGenerator {
   constructor() {}
 
   async fetchPerformanceData(startDate, endDate) {
     try {
-      const response = await ApiService.get('/performance', { startDate, endDate });
-      return response;
+      let data = await storageService.getAllData(STORE_NAMES.PERFORMANCE);
+      if (startDate) {
+        data = data.filter(d => new Date(d.timestamp) >= new Date(startDate));
+      }
+      if (endDate) {
+        data = data.filter(d => new Date(d.timestamp) <= new Date(endDate));
+      }
+      return data;
     } catch (error) {
       console.error('Error fetching performance data for report:', error.message);
       throw error;
@@ -15,8 +21,14 @@ class ReportGenerator {
 
   async fetchMemoryData(startDate, endDate) {
     try {
-      const response = await ApiService.get('/memory', { startDate, endDate });
-      return response;
+      let data = await storageService.getAllData(STORE_NAMES.MEMORY);
+      if (startDate) {
+        data = data.filter(d => new Date(d.timestamp) >= new Date(startDate));
+      }
+      if (endDate) {
+        data = data.filter(d => new Date(d.timestamp) <= new Date(endDate));
+      }
+      return data;
     } catch (error) {
       console.error('Error fetching memory data for report:', error.message);
       throw error;

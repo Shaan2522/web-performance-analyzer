@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:5000/api';
+import { storageService, STORE_NAMES } from './StorageService';
 
 class NetworkAnalyzer {
   constructor() {
@@ -46,25 +44,7 @@ class NetworkAnalyzer {
     return [...this.resourceTimings]; // Return a copy
   }
 
-  async sendRequestsToServer() {
-    if (this.resourceTimings.length === 0) {
-      console.warn('No network requests to send.');
-      return;
-    }
-
-    this.stopMonitoring(); // Stop monitoring before sending
-
-    try {
-      // For simplicity, sending all collected resources in one go.
-      // In a real app, you might batch or send periodically.
-      const response = await axios.post(`${API_BASE_URL}/network`, { requests: this.resourceTimings });
-      console.log('Network requests sent:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error sending network requests:', error.response ? error.response.data : error.message);
-      throw error;
-    }
-  }
+  
 }
 
 export default new NetworkAnalyzer();
